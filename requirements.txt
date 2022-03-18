@@ -1,0 +1,14 @@
+pysbd
+pydub
+numpy
+scipy
+librosa
+torch
+git+https://git@github.com/scrapinghub/python-crfsuite.git@b285fda8afe4f4e9beef3eb24c98fa06c7ad02d2
+gruut
+gruut-lang-de
+gruut-ipa
+requests
+unidecode
+Flask
+
