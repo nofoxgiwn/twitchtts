@@ -1,3 +1,4 @@
+export/audio/*ogg
 WadaSNR/
 .idea/
 *.pyc

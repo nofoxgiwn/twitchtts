@@ -4,8 +4,12 @@ from pathlib import Path
 import traceback
 from app.utils import *
 from flask import Flask, request, Response
+import threading
+import queue
+import time
 
 api = Flask(__name__)
+fifo_queue = queue.Queue()
 
 try:
     from vits.synthesizer import Synthesizer
@@ -37,14 +41,24 @@ def synthesize(params):
     return save_file_name
 
 
-def play_audio(file_path, ext):
+def play_audio_queue():
+    while (True):
+        while fifo_queue.empty():
+            time.sleep(1)
+
+        item = fifo_queue.get()
+        play_audio(item)
+        fifo_queue.task_done()
+
+
+def play_audio(file_path):
     if PLATFORM == "Windows":
-        winsound.PlaySound(str(file_path + "." + ext), winsound.SND_ASYNC)
+        winsound.PlaySound(str(file_path), winsound.SND_ASYNC)
     elif PLATFORM == "Linux" or PLATFORM == "Darwin":
-        if ext == "ogg":
-            audio = AudioSegment.from_ogg(str(file_path + "." + ext))
-        if ext == "wav":
-            audio = AudioSegment.from_wav(str(file_path + "." + ext))
+        if file_path[-3:] == "ogg":
+            audio = AudioSegment.from_ogg(str(file_path))
+        if file_path[-3:] == "wav":
+            audio = AudioSegment.from_wav(str(file_path))
         play(audio)
 
 
@@ -75,10 +89,11 @@ def post_tts():
         traceback.print_tb(err.__traceback__)
     
     if(ttsdata["playback"]):
-        play_audio(params["out_path"] + "/" + filename, params["file_export_ext"])
+        fifo_queue.put(params["out_path"] + "/" + filename + "." + params["file_export_ext"])
 
     return Response('{"filename": "' + filename + '.ogg"}', status=200, mimetype='application/json')
 
 if __name__ == "__main__":
+    threading.Thread(target=play_audio_queue).start()
     api.run() 
     exit_clean_up()
